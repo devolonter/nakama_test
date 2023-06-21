@@ -49,11 +49,29 @@ func InitModule(ctx context.Context, logger runtime.Logger, db *sql.DB,
 		return err
 	}
 
+	_, err = db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS system_logs (
+			id INT PRIMARY KEY DEFAULT unique_rowid(),
+			user_id UUID,
+			payload STRING,
+			time TIMESTAMP DEFAULT current_timestamp()
+		)`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func GetContentRpc(ctx context.Context, logger runtime.Logger, db *sql.DB,
 	nk runtime.NakamaModule, payload string) (string, error) {
+	_, err := db.ExecContext(ctx, "INSERT INTO system_logs (user_id, payload) VALUES ($1, $2)",
+		ctx.Value(runtime.RUNTIME_CTX_USER_ID), payload)
+
+	if err != nil {
+		logger.Error("Failed to insert into system_logs: %s", err.Error())
+	}
+
 	in, err := bindPayload(payload)
 	if err != nil {
 		logger.Error("Failed to bind payload: %s", err.Error())
@@ -61,7 +79,6 @@ func GetContentRpc(ctx context.Context, logger runtime.Logger, db *sql.DB,
 	}
 
 	file, err := nk.ReadFile(filepath.Join(DataDir, in.Type, in.Version+".json"))
-
 	if err != nil {
 		logger.Error("Failed to read file: %s", err.Error())
 		return "", ErrorFileNotFound
