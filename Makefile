@@ -1,6 +1,9 @@
 start:
 	docker compose up --build
 
+test:
+	go test -v *.go
+
 install:
 	cd client && npm install
 
