@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 )
 
+type ReadFile func(filename string) (*os.File, error)
+
 const (
 	CodeInvalidArgument = 3
 	CodeNotFound        = 5
@@ -78,14 +80,11 @@ func GetContentRpc(ctx context.Context, logger runtime.Logger, db *sql.DB,
 		return "", ErrJsonUnmarshal
 	}
 
-	file, err := nk.ReadFile(filepath.Join(DataDir, in.Type, in.Version+".json"))
+	out, err := getContent(in, nk.ReadFile)
 	if err != nil {
 		logger.Error("Failed to read file: %s", err.Error())
 		return "", ErrorFileNotFound
 	}
-
-	defer file.Close()
-	out := getContent(in, file)
 
 	result, err := json.Marshal(out)
 	if err != nil {
@@ -106,16 +105,23 @@ func bindPayload(payload string) (GetContentInPayload, error) {
 	return in, err
 }
 
-func getContent(in GetContentInPayload, file *os.File) GetContentOutPayload {
+func getContent(in GetContentInPayload, readFile ReadFile) (GetContentOutPayload, error) {
 	out := GetContentOutPayload{
 		GetContentInPayload: in,
 	}
+
+	file, err := readFile(filepath.Join(DataDir, in.Type, in.Version+".json"))
+	if err != nil {
+		return out, err
+	}
+
+	defer file.Close()
 
 	reader := io.Reader(file)
 	data, err := io.ReadAll(reader)
 
 	if err != nil {
-		return out
+		return out, nil
 	}
 
 	hashBytes := sha256.Sum256(data)
@@ -126,7 +132,7 @@ func getContent(in GetContentInPayload, file *os.File) GetContentOutPayload {
 		err := json.Unmarshal(data, &fileJson)
 
 		if err != nil {
-			return out
+			return out, nil
 		}
 
 		if content, ok := fileJson["content"]; ok {
@@ -134,5 +140,5 @@ func getContent(in GetContentInPayload, file *os.File) GetContentOutPayload {
 		}
 	}
 
-	return out
+	return out, nil
 }
