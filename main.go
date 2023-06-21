@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	CodeOk              = 0
 	CodeInvalidArgument = 3
+	CodeInternalError   = 13
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 
 var (
 	ErrJsonMarshal   = runtime.NewError("failed to marshal json", CodeInvalidArgument)
-	ErrJsonUnmarshal = runtime.NewError("failed to unmarshal json", CodeInvalidArgument)
+	ErrJsonUnmarshal = runtime.NewError("failed to unmarshal json", CodeInternalError)
 )
 
 type GetContentInPayload struct {
