@@ -15,3 +15,4 @@ FROM registry.heroiclabs.com/heroiclabs/nakama:3.16.0
 
 COPY --from=go-builder /test/test.so /nakama/data/modules/
 COPY local.yml /nakama/data/
+COPY data/ /nakama/data/modules/data/
