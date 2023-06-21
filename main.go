@@ -25,7 +25,7 @@ const (
 	DefaultContentVersion = "1.0.0"
 )
 
-const DataDir = "data/"
+const DataDir = "data"
 
 var (
 	ErrJsonMarshal    = runtime.NewError("failed to marshal json", CodeInvalidArgument)
